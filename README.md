@@ -1,7 +1,7 @@
-# Dunklytics 🧠🏀  
+# Dunklytics 🏀  
 *A Deep Learning-Powered Basketball Prediction Engine*
 
-Dunklytics is an AI-driven project that leverages deep learning and statistical modeling to predict basketball game outcomes and analyze player/team performance.
+**Dunklytics** is an AI-driven project that utilizes deep learning and statistical modeling to predict basketball game outcomes and analyze player and team performance.
 
 ## 🚀 Features
 - 🧠 Predicts match outcomes using trained neural networks
@@ -18,15 +18,16 @@ Dunklytics is an AI-driven project that leverages deep learning and statistical 
 
 ## 📂 Project Structure
 
+````
 BASKETBALL_PROJECT/
 │
-├── data/                 # Raw and processed basketball datasets
-├── models/               # Trained deep learning models
-├── augmentation/         # Scripts to clean/augment datasets
-├── utils/                # Helper functions & preprocessing tools
-├── notebooks/            # Jupyter notebooks for EDA & testing
-└── main.py               # Entry point for training/testing
-
+├── data/           # Raw and processed basketball datasets
+├── models/         # Trained deep learning models
+├── augmentation/   # Scripts to clean/augment datasets
+├── utils/          # Helper functions & preprocessing tools
+├── notebooks/      # Jupyter notebooks for EDA & testing
+└── main.py         # Entry point for training/testing
+````
 ## 📌 How to Run
 
 ```bash
@@ -39,22 +40,20 @@ pip install -r requirements.txt
 
 # Run the training script
 python main.py
+```
+## 📈 Sample Results
+- Accuracy: 85% on test set
+- ROC AUC: 0.91
+- IMG
 
-📈 Sample Results
-	•	Accuracy: 85% on test set
-	•	ROC AUC: 0.91
-	•	[Add graphs or confusion matrix screenshots here if available]
+## 📚 Future Goals
+- 🏆 Integrate live data scraping (NBA APIs)
+- 📲 Build a Streamlit web app or mobile dashboard
+- 🔁 Improve model performance with attention/transformers
 
-📚 Future Goals
-	•	🏆 Integrate live data scraping (NBA APIs)
-	•	📲 Build a Streamlit web app or mobile dashboard
-	•	🔁 Improve model performance with attention/transformers
-
-🙌 Contributions
-
+## 🙌 Contributions
 Feel free to open issues, suggest features, or submit PRs — contributions are welcome!
 
-📄 License
-
-MIT License © Sahil Khatri
+## 📄 License
+MIT License © SAHIL KHATRI (khatrisahil1)
 
