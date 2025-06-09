@@ -15,6 +15,7 @@
 - NumPy, Pandas, Matplotlib
 - Scikit-learn, TensorFlow / PyTorch (based on your model)
 - Jupyter / VS Code
+- Google Colab
 
 ## 📂 Project Structure
 
