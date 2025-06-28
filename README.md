@@ -13,7 +13,7 @@
 ## 🧪 Tech Stack
 - Python 3.12
 - NumPy, Pandas, Matplotlib
-- Scikit-learn, TensorFlow / PyTorch (based on your model)
+- Scikit-learn, TensorFlow / PyTorch 
 - Jupyter / VS Code
 - Google Colab
 
