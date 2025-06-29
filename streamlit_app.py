@@ -18,12 +18,25 @@ st.set_page_config(
 )
 
 # --- Load Models and Data ---
+# THIS IS THE CORRECTED FUNCTION
 @st.cache_resource
 def load_models_and_data():
     """Load all necessary models, encoders, and data files only once."""
     try:
         # Load the main dataset
         df = pd.read_csv("basketball_matches_with_opponents.csv")
+
+        # --- START: FEATURE ENGINEERING (This was the missing section) ---
+        df['FG2_PCT'] = (df['FGM_2'] / df['FGA_2']).replace([np.inf, -np.inf], 0).fillna(0)
+        df['FG3_PCT'] = (df['FGM_3'] / df['FGA_3']).replace([np.inf, -np.inf], 0).fillna(0)
+        df['FT_PCT'] = (df['FTM'] / df['FTA']).replace([np.inf, -np.inf], 0).fillna(0)
+        df['AST_TO_RATIO'] = (df['AST'] / df['TOV']).replace([np.inf, -np.inf], 0).fillna(0)
+        total_rebounds = df['DREB'] + df['OREB']
+        df['DREB_RATE'] = (df['DREB'] / total_rebounds).replace([np.inf, -np.inf], 0).fillna(0)
+        df['OREB_RATE'] = (df['OREB'] / total_rebounds).replace([np.inf, -np.inf], 0).fillna(0)
+        df['TURNOVER_RATE'] = (df['TOV'] / (df.get('FGA', 0) + 0.44 * df.get('FTA', 0) + df.get('TOV', 1))).replace([np.inf, -np.inf], 0).fillna(0)
+        df['MARGIN_VICTORY'] = df['team_score'] - df['opponent_team_score']
+        # --- END: FEATURE ENGINEERING ---
 
         # Load the trained models
         rf_model = joblib.load('random_forest_model.pkl')
@@ -35,16 +48,17 @@ def load_models_and_data():
 
         rf_features = rf_model.feature_names_in_
 
-        # --- THIS IS THE FIX ---
         # Use the loaded encoder to create the encoded columns in the dataframe
         df['team_encoded'] = team_encoder.transform(df['team'])
         df['opponent_team_encoded'] = team_encoder.transform(df['opponent_team'])
-        # ----------------------
 
         return df, rf_model, lstm_model, team_encoder, scaler, rf_features
 
     except FileNotFoundError as e:
         st.error(f"ERROR: A required file is missing -> {e}. Please ensure all model and data files are in your GitHub repository.")
+        return None, None, None, None, None, None
+    except KeyError as e:
+        st.error(f"ERROR: A required column was not found in your CSV file: {e}. Please check that 'basketball_matches_with_opponents.csv' contains all necessary base columns.")
         return None, None, None, None, None, None
 
 # Load all assets
