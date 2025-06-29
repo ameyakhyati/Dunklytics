@@ -22,21 +22,27 @@ st.set_page_config(
 def load_models_and_data():
     """Load all necessary models, encoders, and data files only once."""
     try:
-        # The main dataset with historical data, including opponent stats
+        # Load the main dataset
         df = pd.read_csv("basketball_matches_with_opponents.csv")
-        
+
         # Load the trained models
         rf_model = joblib.load('random_forest_model.pkl')
         lstm_model = tf.keras.models.load_model('lstm_stat_predictor.h5')
-        
-        # Load the encoder and scaler saved during training
+
+        # Load the encoder and scaler
         team_encoder = joblib.load('team_encoder.pkl')
         scaler = joblib.load('scaler.pkl')
-        
-        # Get the exact feature columns the Random Forest model was trained on
+
         rf_features = rf_model.feature_names_in_
-        
+
+        # --- THIS IS THE FIX ---
+        # Use the loaded encoder to create the encoded columns in the dataframe
+        df['team_encoded'] = team_encoder.transform(df['team'])
+        df['opponent_team_encoded'] = team_encoder.transform(df['opponent_team'])
+        # ----------------------
+
         return df, rf_model, lstm_model, team_encoder, scaler, rf_features
+
     except FileNotFoundError as e:
         st.error(f"ERROR: A required file is missing -> {e}. Please ensure all model and data files are in your GitHub repository.")
         return None, None, None, None, None, None
