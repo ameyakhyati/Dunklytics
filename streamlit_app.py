@@ -18,7 +18,6 @@ st.set_page_config(
 )
 
 # --- Load Models and Data ---
-# THIS IS THE CORRECTED FUNCTION
 @st.cache_resource
 def load_models_and_data():
     """Load all necessary models, encoders, and data files only once."""
@@ -26,7 +25,7 @@ def load_models_and_data():
         # Load the main dataset
         df = pd.read_csv("basketball_matches_with_opponents.csv")
 
-        # --- START: FEATURE ENGINEERING (This was the missing section) ---
+        # --- START: FEATURE ENGINEERING ---
         df['FG2_PCT'] = (df['FGM_2'] / df['FGA_2']).replace([np.inf, -np.inf], 0).fillna(0)
         df['FG3_PCT'] = (df['FGM_3'] / df['FGA_3']).replace([np.inf, -np.inf], 0).fillna(0)
         df['FT_PCT'] = (df['FTM'] / df['FTA']).replace([np.inf, -np.inf], 0).fillna(0)
@@ -71,35 +70,28 @@ def get_matchup_mean_stats(team_name, opponent_name, data_df, encoder):
     team_encoded = encoder.transform([team_name])[0]
     opponent_encoded = encoder.transform([opponent_name])[0]
     
-    # [cite_start]Filter for all historical matchups between the two teams [cite: 294]
     matchup_data = data_df[(data_df['team_encoded'] == team_encoded) & (data_df['opponent_team_encoded'] == opponent_encoded)]
     
     if matchup_data.empty:
         return None
         
     stat_features = ['FG2_PCT', 'FG3_PCT', 'FT_PCT', 'AST_TO_RATIO', 'DREB_RATE', 'OREB_RATE', 'TURNOVER_RATE', 'MARGIN_VICTORY']
-    # [cite_start]Calculate and return the mean of the stats for those specific matchups [cite: 295]
     return matchup_data[stat_features].mean().to_dict()
 
 def predict_future_stats(team_name, data_df, encoder, scaler_model, lstm_model, sequence_length=5):
     """Predicts future performance stats for a team using the trained LSTM model."""
     team_encoded = encoder.transform([team_name])[0]
-    # [cite_start]Get the last 'sequence_length' games for the team [cite: 300]
     team_history = data_df[data_df['team_encoded'] == team_encoded].tail(sequence_length)
     
     if len(team_history) < sequence_length:
         return None  # Not enough data for a prediction
         
     stat_features = ['FG2_PCT', 'FG3_PCT', 'FT_PCT', 'AST_TO_RATIO', 'DREB_RATE', 'OREB_RATE', 'TURNOVER_RATE', 'MARGIN_VICTORY']
-    # [cite_start]Scale the historical data using the saved scaler [cite: 82]
     team_history_scaled = scaler_model.transform(team_history[stat_features])
     
-    # [cite_start]Reshape the data for the LSTM model input [cite: 105]
     team_history_input = np.array([team_history_scaled])
     
-    # [cite_start]Use the LSTM to predict the next game's stats [cite: 157]
     predicted_stats_scaled = lstm_model.predict(team_history_input)
-    # [cite_start]Inverse transform to get the stats back to their original scale [cite: 158]
     predicted_stats = scaler_model.inverse_transform(predicted_stats_scaled)
     
     return dict(zip(stat_features, predicted_stats[0]))
@@ -124,18 +116,15 @@ if df is not None:
         if st.button("Predict Win Probability", type="primary"):
             with st.spinner("Analyzing matchup and running models..."):
                 
-                # [cite_start]1. Get head-to-head historical stats [cite: 311]
                 team_mean_stats = get_matchup_mean_stats(home_team, away_team, df, team_encoder)
                 opponent_mean_stats = get_matchup_mean_stats(away_team, home_team, df, team_encoder)
 
-                # [cite_start]2. Get LSTM predicted future stats [cite: 312]
                 team_predicted_stats = predict_future_stats(home_team, df, team_encoder, scaler, lstm_model)
                 opponent_predicted_stats = predict_future_stats(away_team, df, team_encoder, scaler, lstm_model)
 
                 if not all([team_mean_stats, opponent_mean_stats, team_predicted_stats, opponent_predicted_stats]):
                     st.error("Insufficient historical or recent data to make a prediction for this matchup.")
                 else:
-                    # [cite_start]3. Combine stats using the 80/20 weighted average [cite: 283, 314]
                     input_features = {}
                     stat_features = list(team_mean_stats.keys())
                     
@@ -146,14 +135,11 @@ if df is not None:
                     input_features["team_encoded"] = team_encoder.transform([home_team])[0]
                     input_features["opponent_team_encoded"] = team_encoder.transform([away_team])[0]
                     
-                    # 4. Prepare DataFrame and predict
                     input_df = pd.DataFrame([input_features])
-                    # [cite_start]Ensure column order matches the model's training order [cite: 317]
                     input_df = input_df[rf_features]
                     
                     win_proba = rf_model.predict_proba(input_df)[:, 1][0]
                     
-                    # 5. Display results
                     st.success("Prediction Complete!")
                     st.subheader(f"Predicted Win Probability for {home_team}")
                     st.progress(win_proba, text=f"{win_proba:.0%}")
