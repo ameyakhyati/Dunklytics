@@ -113,79 +113,79 @@ if df is not None:
     if home_team == away_team:
         st.error("Please select two different teams.")
     else:
-        # Find this line in your app.py file:
-# if st.button("Predict Win Probability", type="primary"):
-
-# And replace the entire block with this new version:
-
-if st.button("Predict Win Probability", type="primary"):
-    with st.spinner("Analyzing matchup and running models..."):
-
-        # Define the features needed for stat calculations
-        stat_features = ['FG2_PCT', 'FG3_PCT', 'FT_PCT', 'AST_TO_RATIO', 'DREB_RATE', 'OREB_RATE', 'TURNOVER_RATE', 'MARGIN_VICTORY']
-
-        # --- Attempt to get all data types ---
-        # 1. Head-to-head historical stats
-        team_h2h_stats = get_matchup_mean_stats(home_team, away_team, df, team_encoder)
-        opponent_h2h_stats = get_matchup_mean_stats(away_team, home_team, df, team_encoder)
-
-        # 2. LSTM predicted future stats
-        team_predicted_stats = predict_future_stats(home_team, df, team_encoder, scaler, lstm_model)
-        opponent_predicted_stats = predict_future_stats(away_team, df, team_encoder, scaler, lstm_model)
-
-        # 3. Overall season average stats (for fallbacks)
-        team_overall_stats = df[df['team'] == home_team][stat_features].mean().to_dict()
-        opponent_overall_stats = df[df['team'] == away_team][stat_features].mean().to_dict()
-
-        prediction_made = False
-        input_features = {}
+            # Find this line in your app.py file:
+    # if st.button("Predict Win Probability", type="primary"):
+    
+    # And replace the entire block with this new version:
+    
+    if st.button("Predict Win Probability", type="primary"):
+        with st.spinner("Analyzing matchup and running models..."):
+    
+            # Define the features needed for stat calculations
+            stat_features = ['FG2_PCT', 'FG3_PCT', 'FT_PCT', 'AST_TO_RATIO', 'DREB_RATE', 'OREB_RATE', 'TURNOVER_RATE', 'MARGIN_VICTORY']
+    
+            # --- Attempt to get all data types ---
+            # 1. Head-to-head historical stats
+            team_h2h_stats = get_matchup_mean_stats(home_team, away_team, df, team_encoder)
+            opponent_h2h_stats = get_matchup_mean_stats(away_team, home_team, df, team_encoder)
+    
+            # 2. LSTM predicted future stats
+            team_predicted_stats = predict_future_stats(home_team, df, team_encoder, scaler, lstm_model)
+            opponent_predicted_stats = predict_future_stats(away_team, df, team_encoder, scaler, lstm_model)
+    
+            # 3. Overall season average stats (for fallbacks)
+            team_overall_stats = df[df['team'] == home_team][stat_features].mean().to_dict()
+            opponent_overall_stats = df[df['team'] == away_team][stat_features].mean().to_dict()
+    
+            prediction_made = False
+            input_features = {}
 
         # --- Tiered Prediction Logic ---
+    
+            # TIER 1: Gold Standard (Head-to-head + LSTM)
+            if all([team_h2h_stats, opponent_h2h_stats, team_predicted_stats, opponent_predicted_stats]):
+                st.info("Using Tier 1 Prediction: Head-to-Head History + LSTM Forecast")
+                for col in stat_features:
+                    input_features[col] = (0.8 * team_h2h_stats.get(col, 0)) + (0.2 * team_predicted_stats.get(col, 0))
+                    input_features[f"opponent_{col}"] = (0.8 * opponent_h2h_stats.get(col, 0)) + (0.2 * opponent_predicted_stats.get(col, 0))
+                prediction_made = True
+    
+            # TIER 2: Fallback (Overall Averages + LSTM)
+            elif all([team_predicted_stats, opponent_predicted_stats]):
+                st.warning("Using Tier 2 Prediction: Overall Season Averages + LSTM Forecast (No head-to-head history found).")
+                for col in stat_features:
+                    input_features[col] = (0.6 * team_overall_stats.get(col, 0)) + (0.4 * team_predicted_stats.get(col, 0))
+                    input_features[f"opponent_{col}"] = (0.6 * opponent_overall_stats.get(col, 0)) + (0.4 * opponent_predicted_stats.get(col, 0))
+                prediction_made = True
+    
+            # TIER 3: Fallback (Head-to-head Only)
+            elif all([team_h2h_stats, opponent_h2h_stats]):
+                st.warning("Using Tier 3 Prediction: Head-to-Head History Only (Not enough recent games for LSTM).")
+                for col in stat_features:
+                    input_features[col] = team_h2h_stats.get(col, 0)
+                    input_features[f"opponent_{col}"] = opponent_h2h_stats.get(col, 0)
+                prediction_made = True
+    
+            # TIER 4: Final Fallback (Overall Averages Only)
+            else:
+                st.warning("Using Tier 4 Prediction: Overall Season Averages Only (Limited data available).")
+                for col in stat_features:
+                    input_features[col] = team_overall_stats.get(col, 0)
+                    input_features[f"opponent_{col}"] = opponent_overall_stats.get(col, 0)
+                prediction_made = True
+    
+            # --- Final Prediction Step ---
+            if prediction_made:
+                input_features["team_encoded"] = team_encoder.transform([home_team])[0]
+                input_features["opponent_team_encoded"] = team_encoder.transform([away_team])[0]
 
-        # TIER 1: Gold Standard (Head-to-head + LSTM)
-        if all([team_h2h_stats, opponent_h2h_stats, team_predicted_stats, opponent_predicted_stats]):
-            st.info("Using Tier 1 Prediction: Head-to-Head History + LSTM Forecast")
-            for col in stat_features:
-                input_features[col] = (0.8 * team_h2h_stats.get(col, 0)) + (0.2 * team_predicted_stats.get(col, 0))
-                input_features[f"opponent_{col}"] = (0.8 * opponent_h2h_stats.get(col, 0)) + (0.2 * opponent_predicted_stats.get(col, 0))
-            prediction_made = True
-
-        # TIER 2: Fallback (Overall Averages + LSTM)
-        elif all([team_predicted_stats, opponent_predicted_stats]):
-            st.warning("Using Tier 2 Prediction: Overall Season Averages + LSTM Forecast (No head-to-head history found).")
-            for col in stat_features:
-                input_features[col] = (0.6 * team_overall_stats.get(col, 0)) + (0.4 * team_predicted_stats.get(col, 0))
-                input_features[f"opponent_{col}"] = (0.6 * opponent_overall_stats.get(col, 0)) + (0.4 * opponent_predicted_stats.get(col, 0))
-            prediction_made = True
-
-        # TIER 3: Fallback (Head-to-head Only)
-        elif all([team_h2h_stats, opponent_h2h_stats]):
-            st.warning("Using Tier 3 Prediction: Head-to-Head History Only (Not enough recent games for LSTM).")
-            for col in stat_features:
-                input_features[col] = team_h2h_stats.get(col, 0)
-                input_features[f"opponent_{col}"] = opponent_h2h_stats.get(col, 0)
-            prediction_made = True
-
-        # TIER 4: Final Fallback (Overall Averages Only)
-        else:
-            st.warning("Using Tier 4 Prediction: Overall Season Averages Only (Limited data available).")
-            for col in stat_features:
-                input_features[col] = team_overall_stats.get(col, 0)
-                input_features[f"opponent_{col}"] = opponent_overall_stats.get(col, 0)
-            prediction_made = True
-
-        # --- Final Prediction Step ---
-        if prediction_made:
-            input_features["team_encoded"] = team_encoder.transform([home_team])[0]
-            input_features["opponent_team_encoded"] = team_encoder.transform([away_team])[0]
-
-            input_df = pd.DataFrame([input_features])[rf_features]
-            win_proba = rf_model.predict_proba(input_df)[:, 1][0]
-
-            st.success("Prediction Complete!")
-            st.subheader(f"Predicted Win Probability for {home_team}")
-            st.progress(win_proba, text=f"{win_proba:.0%}")
-            st.write(f"The model predicts that the **{home_team}** have a **{win_proba:.0%}** chance of winning against the **{away_team}**.")
-        else:
-            # This message should now almost never appear
-            st.error("Could not generate a prediction. Not enough data even for the most basic model.")
+                input_df = pd.DataFrame([input_features])[rf_features]
+                win_proba = rf_model.predict_proba(input_df)[:, 1][0]
+    
+                st.success("Prediction Complete!")
+                st.subheader(f"Predicted Win Probability for {home_team}")
+                st.progress(win_proba, text=f"{win_proba:.0%}")
+                st.write(f"The model predicts that the **{home_team}** have a **{win_proba:.0%}** chance of winning against the **{away_team}**.")
+            else:
+                # This message should now almost never appear
+                st.error("Could not generate a prediction. Not enough data even for the most basic model.")
