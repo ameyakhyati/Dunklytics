@@ -1,7 +1,16 @@
+
 # Dunklytics 🏀  
 *A Deep Learning-Powered Basketball Prediction Engine*
 
-**Dunklytics** is an AI-driven project that predicts basketball game outcomes using a sophisticated hybrid model. The entire pipeline, from data processing to final prediction, is wrapped in a live, interactive web application deployed on Streamlit Cloud.
+- **Dunklytics** is an AI-driven project that predicts basketball game outcomes using a sophisticated hybrid model. The entire pipeline, from data processing to final prediction, is wrapped in a live, interactive web application deployed on Streamlit Cloud.
+- View the deployed app by clicking below 👇 .
+
+<p align="center">
+  <a href="https://dunklytics.streamlit.app/">
+    <img src="https://img.shields.io/badge/Launch%20App-Dunklytics-ff4b4b?style=for-the-badge&logo=streamlit&logoColor=white" alt="Launch App">
+  </a>
+</p>
+
 
 ---
 
