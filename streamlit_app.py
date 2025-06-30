@@ -1,4 +1,4 @@
-# filename: app.py (Final Corrected Version)
+# filename: app.py (Final Corrected Version for Organized Directory)
 
 import streamlit as st
 import pandas as pd
@@ -22,7 +22,13 @@ st.set_page_config(
 def load_models_and_data():
     """Load all necessary models, encoders, and data files only once."""
     try:
-        df = pd.read_csv("basketball_matches_with_opponents.csv")
+        # --- PATHS UPDATED FOR ORGANIZED FOLDERS ---
+        df = pd.read_csv("data/basketball_matches_with_opponents.csv")
+        rf_model = joblib.load('models/random_forest_model.pkl')
+        lstm_model = tf.keras.models.load_model('models/lstm_stat_predictor.h5')
+        team_encoder = joblib.load('models/team_encoder.pkl')
+        scaler = joblib.load('models/scaler.pkl')
+        # ---------------------------------------------
 
         # --- FEATURE ENGINEERING ---
         df['FG2_PCT'] = (df['FGM_2'] / df['FGA_2']).replace([np.inf, -np.inf], 0).fillna(0)
@@ -35,22 +41,19 @@ def load_models_and_data():
         df['TURNOVER_RATE'] = (df['TOV'] / (df.get('FGA', 0) + 0.44 * df.get('FTA', 0) + df.get('TOV', 1))).replace([np.inf, -np.inf], 0).fillna(0)
         df['MARGIN_VICTORY'] = df['team_score'] - df['opponent_team_score']
         
-        rf_model = joblib.load('random_forest_model.pkl')
-        lstm_model = tf.keras.models.load_model('lstm_stat_predictor.h5')
-        team_encoder = joblib.load('team_encoder.pkl')
-        scaler = joblib.load('scaler.pkl')
         rf_features = rf_model.feature_names_in_
 
+        # Use the loaded encoder to create the encoded columns in the dataframe
         df['team_encoded'] = team_encoder.transform(df['team'])
         df['opponent_team_encoded'] = team_encoder.transform(df['opponent_team'])
 
         return df, rf_model, lstm_model, team_encoder, scaler, rf_features
 
     except FileNotFoundError as e:
-        st.error(f"ERROR: A required file is missing -> {e}.")
+        st.error(f"ERROR: A required file is missing -> {e}. Please check your repository's file structure.")
         return None, None, None, None, None, None
     except KeyError as e:
-        st.error(f"ERROR: A required column was not found in your CSV file: {e}.")
+        st.error(f"ERROR: A required column was not found in your CSV file: {e}. Please check that the data file contains all necessary base columns.")
         return None, None, None, None, None, None
 
 # Load all assets
@@ -81,16 +84,20 @@ st.write("This app predicts basketball match outcomes using a hybrid model that 
 
 if df is not None:
     TEAMS = sorted(team_encoder.classes_)
+
     col1, col2 = st.columns(2)
     with col1:
-        home_team = st.selectbox("Select Home Team:", TEAMS, index=TEAMS.index("oklahoma_sooners"))
+        # Set a default index that is within the bounds of the list
+        home_index = min(10, len(TEAMS) - 1) if "oklahoma_sooners" not in TEAMS else TEAMS.index("oklahoma_sooners")
+        home_team = st.selectbox("Select Home Team:", TEAMS, index=home_index)
     with col2:
-        away_team = st.selectbox("Select Away Team:", TEAMS, index=TEAMS.index("baylor_bears"))
+        # Set a different default index
+        away_index = min(25, len(TEAMS) - 1) if "baylor_bears" not in TEAMS else TEAMS.index("baylor_bears")
+        away_team = st.selectbox("Select Away Team:", TEAMS, index=away_index)
 
     if home_team == away_team:
         st.error("Please select two different teams.")
     else:
-        # This 'if' statement is now correctly indented inside the 'else' block
         if st.button("Predict Win Probability", type="primary"):
             with st.spinner("Analyzing matchup and running models..."):
                 team_h2h_stats = get_matchup_mean_stats(home_team, away_team, df, team_encoder)
