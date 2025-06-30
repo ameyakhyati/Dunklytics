@@ -1,4 +1,4 @@
-# filename: app.py (Final Corrected Version for Organized Directory)
+# filename: app.py
 
 import streamlit as st
 import pandas as pd
@@ -6,6 +6,7 @@ import joblib
 import tensorflow as tf
 import numpy as np
 import warnings
+import os
 
 # Ignore warnings for a cleaner output
 warnings.filterwarnings('ignore')
@@ -88,11 +89,13 @@ if df is not None:
     col1, col2 = st.columns(2)
     with col1:
         # Set a default index that is within the bounds of the list
-        home_index = min(10, len(TEAMS) - 1) if "oklahoma_sooners" not in TEAMS else TEAMS.index("oklahoma_sooners")
+        default_home = "oklahoma_sooners"
+        home_index = TEAMS.index(default_home) if default_home in TEAMS else 0
         home_team = st.selectbox("Select Home Team:", TEAMS, index=home_index)
     with col2:
         # Set a different default index
-        away_index = min(25, len(TEAMS) - 1) if "baylor_bears" not in TEAMS else TEAMS.index("baylor_bears")
+        default_away = "baylor_bears"
+        away_index = TEAMS.index(default_away) if default_away in TEAMS else 1
         away_team = st.selectbox("Select Away Team:", TEAMS, index=away_index)
 
     if home_team == away_team:
@@ -100,6 +103,7 @@ if df is not None:
     else:
         if st.button("Predict Win Probability", type="primary"):
             with st.spinner("Analyzing matchup and running models..."):
+                # Attempt to get all necessary data
                 team_h2h_stats = get_matchup_mean_stats(home_team, away_team, df, team_encoder)
                 opponent_h2h_stats = get_matchup_mean_stats(away_team, home_team, df, team_encoder)
                 team_predicted_stats = predict_future_stats(home_team, df, team_encoder, scaler, lstm_model)
